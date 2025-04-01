@@ -1,0 +1,224 @@
+﻿@model WebApplication1.Models.AnalyticsFilterModel
+@{
+    ViewData["Title"] = "Аналитика";
+}
+
+<div class="container py-3">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <h2 class="mb-3 text-center">@ViewData["Title"]</h2>
+
+            <form asp-action="Analytics" method="get" id="analyticsForm">
+                <div class="card mb-3 shadow-sm">
+                    <div class="card-header bg-light py-2">
+                        <h5 class="mb-0">Параметры анализа</h5>
+                    </div>
+                    <div class="card-body p-3">
+                        <div class="row g-2">
+                            <div class="col-md-4">
+                                <label asp-for="AccountId" class="form-label">Счёт</label>
+                                <select asp-for="AccountId" class="form-select" required>
+                                    <option value="">Выберите счёт</option>
+                                    @foreach (var item in ViewBag.Accounts as IEnumerable<SelectListItem>)
+                                    {
+                                        <option value="@item.Value">@item.Text</option>
+                                    }
+                                </select>
+                                <span asp-validation-for="AccountId" class="text-danger small d-block mt-1"></span>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label asp-for="OperationTypeId" class="form-label">Тип операции</label>
+                                <select asp-for="OperationTypeId" class="form-select" required>
+                                    <option value="">Выберите тип</option>
+                                    @foreach (var item in ViewBag.OperationTypes as IEnumerable<SelectListItem>)
+                                    {
+                                        <option value="@item.Value">@item.Text</option>
+                                    }
+                                </select>
+                                <span asp-validation-for="OperationTypeId" class="text-danger small d-block mt-1"></span>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label asp-for="StartDate" class="form-label">Начальная дата</label>
+                                <input asp-for="StartDate" type="date" class="form-control" />
+                                <span asp-validation-for="StartDate" class="text-danger small d-block mt-1"></span>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label asp-for="EndDate" class="form-label">Конечная дата</label>
+                                <input asp-for="EndDate" type="date" class="form-control" />
+                                <span asp-validation-for="EndDate" class="text-danger small d-block mt-1"></span>
+                            </div>
+                        </div>
+
+                        <div class="d-grid mt-3">
+                            <button type="submit" class="btn btn-primary btn-block py-2">
+                                Сформировать отчёт
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+
+            @if (ViewBag.AnalyticsData != null)
+            {
+                <div class="card shadow-sm mt-3">
+                    <div class="card-body p-3">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="chart-container" style="height: 320px;">
+                                    <canvas id="analyticsChart"></canvas>
+                                </div>
+                            </div>
+    
+                            <div class="col-md-6">
+                                <div class="d-flex flex-column h-100">
+                                    <h5 class="mb-2 font-weight-normal">Распределение по категориям</h5>
+                                    <p class="text-muted mb-3 small">
+                                        Период: @Model.StartDate?.ToString("dd.MM.yyyy") - @Model.EndDate?.ToString("dd.MM.yyyy")
+                                    </p>
+                                    <div class="table-responsive flex-grow-1" style="max-height: 280px; overflow-y: auto;">
+                                        <table class="table table-sm table-striped mb-0">
+                                            <thead class="sticky-top bg-light">
+                                                <tr>
+                                                    <th>Категория</th>
+                                                    <th class="text-end">Сумма</th>
+                                                    <th class="text-end">Доля</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var item in ViewBag.AnalyticsData as List<WebApplication1.Models.AnalyticsItem>)
+                                                {
+                                                    <tr>
+                                                        <td>@item.CategoryName</td>
+                                                        <td class="text-end">@item.Amount.ToString("N2") ₽</td>
+                                                        <td class="text-end">@item.Percentage.ToString("N2") %</td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .chart-container {
+            position: relative;
+            min-height: 300px;
+        }
+
+        .table th {
+            white-space: nowrap;
+            font-weight: 500;
+        }
+
+        .btn-block {
+            width: 100%;
+        }
+
+        .card-header {
+            font-size: 1rem;
+        }
+
+        .card {
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(33, 40, 50, 0.15);
+        }
+
+        .card-header {
+            font-weight: 500;
+            background-color: rgba(0,0,0,.03);
+        }
+
+        .table th {
+            border-top: none;
+            background-color: #f8f9fa;
+        }
+
+        select.form-select {
+            cursor: pointer;
+        }
+
+        .is-invalid {
+            border-color: #dc3545;
+        }
+    </style>
+}
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial"); 
+    }
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const today = new Date();
+            const monthAgo = new Date(today);
+            monthAgo.setMonth(monthAgo.getMonth() - 1);
+
+            document.getElementById('StartDate').valueAsDate = monthAgo;
+            document.getElementById('EndDate').valueAsDate = today;
+
+        @if (ViewBag.AnalyticsData != null)
+        {
+            <text>
+                    var ctx = document.getElementById('analyticsChart').getContext('2d');
+                    var labels = @Html.Raw(Json.Serialize(ViewData["ChartLabels"]));
+                    var data = @Html.Raw(Json.Serialize(ViewData["ChartData"]));
+                    var percentages = @Html.Raw(Json.Serialize(ViewData["ChartPercentages"]));
+
+                    var backgroundColors = [
+                        '#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b',
+                        '#858796', '#5a5c69', '#3a3b45', '#2e2f3a', '#1a1c23'
+                    ];
+
+                    new Chart(ctx, {
+                        type: 'pie',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                data: data,
+                                backgroundColor: backgroundColors,
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'right',
+                                    labels: {
+                                        boxWidth: 12,
+                                        padding: 10,
+                                        font: {
+                                            size: 12
+                                        }
+                                    }
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            return `${context.label}: ${context.raw.toLocaleString('ru-RU')} ₽ (${percentages[context.dataIndex].toLocaleString('ru-RU')}%)`;
+                                        }
+                                    }
+                                }
+                            },
+                            layout: {
+                                padding: 10
+                            }
+                        }
+                    });
+            </text>
+        }
+        });
+    </script>
+}
