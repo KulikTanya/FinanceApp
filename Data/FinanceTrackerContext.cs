@@ -13,7 +13,9 @@ namespace WebApplication1.Data
         public DbSet<OperationHistory> OperationsHistory { get; set; }
         public DbSet<OperationCategory> OperationsCategories { get; set; }
         public DbSet<OperationType> OperationsType { get; set; }
-
+        public DbSet<Role> Roles { get; set; }
+        public DbSet<Privilege> Privileges { get; set; }
+        public DbSet<RolePrivilege> RolePrivileges { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -41,9 +43,84 @@ namespace WebApplication1.Data
                     .HasMaxLength(100)
                     .HasColumnName("Name");
 
+                entity.Property(e => e.RoleId)
+                    .HasColumnName("RoleId")
+                    .HasDefaultValue(2); 
+
                 entity.HasIndex(u => u.Login)
                     .IsUnique()
                     .HasDatabaseName("IX_Users_Login");
+
+                entity.HasOne(u => u.Role)
+                    .WithMany(r => r.Users)
+                    .HasForeignKey(u => u.RoleId)
+                    .HasConstraintName("FK_Users_Roles");
+            });
+
+            // Roles
+            modelBuilder.Entity<Role>(entity =>
+            {
+                entity.ToTable("Roles", "dbo");
+                entity.HasKey(e => e.Id).HasName("PK_Roles");
+
+                entity.Property(e => e.Id)
+                    .HasColumnName("Id")
+                    .ValueGeneratedOnAdd();
+
+                entity.Property(e => e.RoleName)
+                    .IsRequired()
+                    .HasMaxLength(50)
+                    .HasColumnName("RoleName");
+
+                entity.HasIndex(r => r.RoleName)
+                    .IsUnique()
+                    .HasDatabaseName("IX_Roles_RoleName");
+            });
+
+            // Privileges
+            modelBuilder.Entity<Privilege>(entity =>
+            {
+                entity.ToTable("Privileges", "dbo");
+                entity.HasKey(e => e.Id).HasName("PK_Privileges");
+
+                entity.Property(e => e.Id)
+                    .HasColumnName("Id")
+                    .ValueGeneratedOnAdd();
+
+                entity.Property(e => e.PrivilegeName)
+                    .IsRequired()
+                    .HasMaxLength(100)
+                    .HasColumnName("PrivilegeName");
+
+                entity.HasIndex(p => p.PrivilegeName)
+                    .IsUnique()
+                    .HasDatabaseName("IX_Privileges_PrivilegeName");
+            });
+
+            // RolePrivileges 
+            modelBuilder.Entity<RolePrivilege>(entity =>
+            {
+                entity.ToTable("RolePrivileges", "dbo");
+                entity.HasKey(e => new { e.RoleId, e.PrivilegeId })
+                    .HasName("PK_RolePrivileges");
+
+                entity.Property(e => e.RoleId)
+                    .HasColumnName("RoleId");
+
+                entity.Property(e => e.PrivilegeId)
+                    .HasColumnName("PrivilegeId");
+
+                entity.HasOne(rp => rp.Role)
+                    .WithMany(r => r.RolePrivileges)
+                    .HasForeignKey(rp => rp.RoleId)
+                    .HasConstraintName("FK_RolePrivileges_Roles")
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(rp => rp.Privilege)
+                    .WithMany(p => p.RolePrivileges)
+                    .HasForeignKey(rp => rp.PrivilegeId)
+                    .HasConstraintName("FK_RolePrivileges_Privileges")
+                    .OnDelete(DeleteBehavior.Cascade);
             });
 
             // Accounts
@@ -131,14 +208,13 @@ namespace WebApplication1.Data
                 entity.Property(e => e.OperationTypeId)
                     .HasColumnName("OperationTypeId");
 
-
                 entity.HasOne(oh => oh.OperationCategory)
                     .WithMany()
                     .HasForeignKey(oh => oh.OperationCategoryId)
                     .HasConstraintName("FK_OperationsHistory_OperationsCategories");
 
                 entity.HasOne(oh => oh.Account)
-                    .WithMany() 
+                    .WithMany()
                     .HasForeignKey(oh => oh.AccountId)
                     .OnDelete(DeleteBehavior.Restrict)
                     .HasConstraintName("FK_OperationsHistory_Accounts");

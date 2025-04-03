@@ -1,12 +1,12 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
-using WebApplication1.Data; 
+using WebApplication1.Data;
 
 namespace WebApplication1
 {
     public class Program
     {
-        public static void Main(string[] args)    
+        public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
 
@@ -24,7 +24,7 @@ namespace WebApplication1
                     options.LogoutPath = "/Account/Logout";
                     options.AccessDeniedPath = "/Account/AccessDenied";
                     options.ExpireTimeSpan = TimeSpan.FromDays(30);
-                });
+                });            
 
             var app = builder.Build();
 
@@ -44,7 +44,6 @@ namespace WebApplication1
             app.MapControllerRoute(
                 name: "default",
                 pattern: "{controller=Account}/{action=Login}/{id?}");
-
 
             app.Run();
         }

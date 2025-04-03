@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Data;
 
 namespace WebApplication1.Models
 {
@@ -13,6 +14,8 @@ namespace WebApplication1.Models
         public string Login { get; set; }
         public string Password { get; set; }
 
+        public int RoleId { get; set; }
+        public Role Role { get; set; }
         public ICollection<Account> Accounts { get; set; }
     }
 }

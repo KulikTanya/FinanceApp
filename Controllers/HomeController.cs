@@ -21,23 +21,34 @@ public class HomeController : Controller
         {
             return Unauthorized();
         }
+        
+        var accountIds = await _context.Accounts
+            .Where(a => a.UserId == userId)
+            .Select(a => a.Id)
+            .ToListAsync();
+
+        var incomeTypeId = await _context.OperationsType
+            .Where(t => t.OperationName == "Доходы")
+            .Select(t => t.Id)
+            .FirstOrDefaultAsync();
+
+        var expenseTypeId = await _context.OperationsType
+            .Where(t => t.OperationName == "Расходы")
+            .Select(t => t.Id)
+            .FirstOrDefaultAsync();
 
         var incomes = await _context.OperationsHistory
-            .Where(o => o.OperationTypeId == 1 &&
-                        _context.Accounts.Any(a => a.Id == o.AccountId && a.UserId == userId))
+            .Where(o => o.OperationTypeId == incomeTypeId && accountIds.Contains(o.AccountId))
             .SumAsync(o => (decimal?)o.Amount) ?? 0;
 
         var expenses = await _context.OperationsHistory
-            .Where(o => o.OperationTypeId == 2 &&
-                        _context.Accounts.Any(a => a.Id == o.AccountId && a.UserId == userId))
+            .Where(o => o.OperationTypeId == expenseTypeId && accountIds.Contains(o.AccountId))
             .SumAsync(o => (decimal?)o.Amount) ?? 0;
 
-        var model = new DashboardViewModel
+        return View(new DashboardViewModel
         {
             TotalIncomes = incomes,
             TotalExpenses = expenses
-        };
-
-        return View(model);
+        });
     }
 }

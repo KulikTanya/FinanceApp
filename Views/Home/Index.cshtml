@@ -19,39 +19,58 @@
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        const ctx = document.getElementById('financeChart').getContext('2d');
-        new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: ['Расходы', 'Доходы'],
-                datasets: [{
-                    label: 'Сумма',
-                    data: [@Model.TotalIncomes, @Model.TotalExpenses],
-                    backgroundColor: [
-                        'rgba(54, 162, 235, 0.5)',
-                        'rgba(255, 99, 132, 0.5)'
-                    ],
-                    borderColor: [
-                        'rgba(54, 162, 235, 1)',
-                        'rgba(255, 99, 132, 1)'
-                    ],
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true, 
-                maintainAspectRatio: false, 
-                scales: {
-                    y: {
-                        beginAtZero: true
-                    }
+        document.addEventListener('DOMContentLoaded', function() {
+            const incomes = parseFloat("@Model.TotalIncomes".replace(',', '.'));
+            const expenses = parseFloat("@Model.TotalExpenses".replace(',', '.'));
+
+            console.log('Доходы:', incomes, 'Расходы:', expenses);
+
+            const ctx = document.getElementById('financeChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Доходы', 'Расходы'],
+                    datasets: [{
+                        label: 'Сумма',
+                        data: [incomes, expenses],
+                        backgroundColor: [
+                            'rgba(54, 162, 235, 0.5)',
+                            'rgba(255, 99, 132, 0.5)'
+                        ],
+                        borderColor: [
+                            'rgba(54, 162, 235, 1)',
+                            'rgba(255, 99, 132, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
                 },
-                plugins: {
-                    legend: {
-                        position: 'top',
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return value.toLocaleString('ru-RU');
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + context.raw.toLocaleString('ru-RU');
+                                }
+                            }
+                        }
                     }
                 }
-            }
+            });
         });
     </script>
 }

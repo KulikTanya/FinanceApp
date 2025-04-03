@@ -1,0 +1,73 @@
+﻿@using WebApplication1.Models.ViewModels
+@model AdminPanelViewModel
+
+<h2 class="text-center mb-4">Панель администратора</h2>
+
+<div class="row">
+    <div class="col-md-6">
+        <h4>Управление ролями пользователей</h4>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Пользователь</th>
+                    <th>Текущая роль</th>
+                    <th>Новая роль</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var user in Model.Users)
+                {
+                    <tr>
+                        <td>@user.Name (@user.Login)</td>
+                        <td>@user.Role?.RoleName</td>
+                        <td>
+                            <form asp-action="ChangeUserRole" method="post" class="form-inline">
+                                <input type="hidden" name="userId" value="@user.Id" />
+                                <select name="roleId" class="form-control mr-2">
+                                    @foreach (var role in Model.Roles)
+                                    {
+                                        <option value="@role.Id" selected="@(role.Id == user.RoleId)">@role.RoleName</option>
+                                    }
+                                </select>
+                                <button type="submit" class="btn btn-sm btn-primary">Изменить</button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="col-md-6">
+        <h4>Управление привилегиями ролей</h4>
+        @foreach (var role in Model.Roles)
+        {
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5>@role.RoleName</h5>
+                </div>
+                <div class="card-body">
+                    <form asp-action="UpdateRolePrivileges" method="post">
+                        <input type="hidden" name="roleId" value="@role.Id" />
+                        <div class="form-group">
+                            @foreach (var privilege in Model.Privileges)
+                            {
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox"
+                                           name="privilegeIds" value="@privilege.Id"
+                                           id="privilege_@(role.Id)_@(privilege.Id)"
+                                           checked="@(Model.RolePrivilegeMap.ContainsKey(role.Id) &&
+                                                    Model.RolePrivilegeMap[role.Id].Contains(privilege.Id))">
+                                    <label class="form-check-label" for="privilege_@(role.Id)_@(privilege.Id)">
+                                        @privilege.PrivilegeName
+                                    </label>
+                                </div>
+                            }
+                        </div>
+                        <button type="submit" class="btn btn-sm btn-success mt-2">Сохранить</button>
+                    </form>
+                </div>
+            </div>
+        }
+    </div>
+</div>
