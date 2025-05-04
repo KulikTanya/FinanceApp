@@ -57,15 +57,25 @@
     </div>
 
     @if (Model.MaxIncome != null)
-    {
+    {        
         <div class="card shadow-sm">
             <div class="card-header bg-light py-2">
                 <div class="d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Результаты отчета</h5>
-                    @if (ViewBag.Period != null)
-                    {
-                        <span class="text-muted small">Период: @ViewBag.Period</span>
-                    }
+                    <div>
+                        @if (ViewBag.Period != null)
+                        {
+                            <span class="text-muted small me-3">Период: @ViewBag.Period</span>
+                        }
+                        <form asp-action="Generate" method="post" class="d-inline">
+                            <input type="hidden" asp-for="SelectedAccountId" />
+                            <input type="hidden" asp-for="StartDate" />
+                            <input type="hidden" asp-for="EndDate" />
+                            <button type="submit" name="exportType" value="excel" class="btn btn-success btn-sm">
+                                <i class="bi bi-file-earmark-excel"></i> Экспорт в Excel
+                            </button>
+                        </form>
+                    </div>
                 </div>
             </div>
             <div class="card-body">

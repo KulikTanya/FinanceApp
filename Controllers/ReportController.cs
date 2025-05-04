@@ -2,11 +2,13 @@
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using WebApplication1.Data;
 using WebApplication1.Models;
+using ClosedXML.Excel;
 
 namespace WebApplication1.Controllers
 {
@@ -35,7 +37,7 @@ namespace WebApplication1.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Generate(ReportViewModel model)
+        public async Task<IActionResult> Generate(ReportViewModel model, string exportType = null)
         {
             var userId = GetCurrentUserId();
 
@@ -55,10 +57,74 @@ namespace WebApplication1.Controllers
             model.PopularExpenseCategory = await GetPopularCategoryAsync(model.SelectedAccountId, adjustedStartDate, adjustedEndDate, "Расходы");
             model.Balance = await GetBalanceDifferenceAsync(model.SelectedAccountId, adjustedStartDate, adjustedEndDate);
 
-            ViewBag.Period = $"{model.StartDate.ToString("dd.MM.yyyy")} - {model.EndDate.ToString("dd.MM.yyyy")}";
-
+            ViewBag.Period = $"{model.StartDate:dd.MM.yyyy} - {model.EndDate:dd.MM.yyyy}";
             model.Accounts = GetUserAccounts(userId);
+
+            if (exportType == "excel")
+            {
+                return ExportToExcel(model);
+            }
+
             return View("Index", model);
+        }
+
+        private IActionResult ExportToExcel(ReportViewModel model)
+        {
+            using (var workbook = new XLWorkbook())
+            {
+                var worksheet = workbook.Worksheets.Add("Отчет");
+
+                worksheet.Cell(1, 1).Value = "Показатель";
+                worksheet.Cell(1, 2).Value = "Результат";
+
+                int row = 2;
+                worksheet.Cell(row, 1).Value = "Самая большая статья доходов";
+                worksheet.Cell(row++, 2).Value = model.MaxIncome.CategoryName != null
+                    ? $"{model.MaxIncome.CategoryName} ({model.MaxIncome.Amount:C})"
+                    : "Нет данных";
+
+                worksheet.Cell(row, 1).Value = "Самая большая статья расходов";
+                worksheet.Cell(row++, 2).Value = model.MaxExpense.CategoryName != null
+                    ? $"{model.MaxExpense.CategoryName} ({model.MaxExpense.Amount:C})"
+                    : "Нет данных";
+
+                worksheet.Cell(row, 1).Value = "Самая популярная категория доходов";
+                worksheet.Cell(row++, 2).Value = model.PopularIncomeCategory.CategoryName != null
+                    ? $"{model.PopularIncomeCategory.CategoryName} ({model.PopularIncomeCategory.OperationCount} операций)"
+                    : "Нет данных";
+
+                worksheet.Cell(row, 1).Value = "Самая популярная категория расходов";
+                worksheet.Cell(row++, 2).Value = model.PopularExpenseCategory.CategoryName != null
+                    ? $"{model.PopularExpenseCategory.CategoryName} ({model.PopularExpenseCategory.OperationCount} операций)"
+                    : "Нет данных";
+
+                worksheet.Cell(row, 1).Value = "Отклонение расходов от доходов";
+                worksheet.Cell(row, 2).Value = model.Balance.Difference.ToString("C");
+
+                if (model.Balance.Difference >= 0)
+                {
+                    worksheet.Cell(row, 2).Style.Font.FontColor = XLColor.Green;
+                }
+                else
+                {
+                    worksheet.Cell(row, 2).Style.Font.FontColor = XLColor.Red;
+                }
+
+                worksheet.Columns().AdjustToContents();
+                worksheet.Row(1).Style.Font.Bold = true;
+                worksheet.Row(1).Style.Fill.BackgroundColor = XLColor.LightGray;
+
+                // Сохранение в MemoryStream
+                using (var stream = new MemoryStream())
+                {
+                    workbook.SaveAs(stream);
+                    return File(
+                        stream.ToArray(),
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        $"Финансовый_отчет_{model.StartDate:yyyyMMdd}-{model.EndDate:yyyyMMdd}.xlsx"
+                    );
+                }
+            }
         }
 
         private async Task<OperationInfo> GetMaxOperationAsync(int accountId, DateTime startDate, DateTime endDate, string operationType)
