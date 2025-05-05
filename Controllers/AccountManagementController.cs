@@ -42,9 +42,18 @@ namespace WebApplication1.Controllers
         {
             var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
 
-            await _context.Database.ExecuteSqlInterpolatedAsync(
-                $"INSERT INTO dbo.Accounts (UserId, AccountNumber) VALUES ({userId}, {account.AccountNumber})");
+            if (_context.Database.ProviderName == "Microsoft.EntityFrameworkCore.InMemory")
+            {
+                account.UserId = userId;
+                _context.Accounts.Add(account);
+            }
+            else
+            {
+                await _context.Database.ExecuteSqlInterpolatedAsync(
+                    $"INSERT INTO dbo.Accounts (UserId, AccountNumber) VALUES ({userId}, {account.AccountNumber})");
+            }
 
+            await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 
