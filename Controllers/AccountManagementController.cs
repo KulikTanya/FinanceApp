@@ -42,6 +42,15 @@ namespace WebApplication1.Controllers
         {
             var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
 
+            bool accountExists = await _context.Accounts
+                .AnyAsync(a => a.UserId == userId && a.AccountNumber == account.AccountNumber);
+
+            if (accountExists)
+            {
+                ModelState.AddModelError("AccountNumber", "Такой счет уже существует");
+                return View(account);
+            }
+
             if (_context.Database.ProviderName == "Microsoft.EntityFrameworkCore.InMemory")
             {
                 account.UserId = userId;
@@ -75,6 +84,16 @@ namespace WebApplication1.Controllers
         public async Task<IActionResult> Edit(int id, [Bind("Id,AccountNumber")] Account account)
         {
             var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+            bool accountExists = await _context.Accounts
+                .AnyAsync(a => a.UserId == userId &&
+                              a.AccountNumber == account.AccountNumber &&
+                              a.Id != id);
+
+            if (accountExists)
+            {
+                ModelState.AddModelError("AccountNumber", "Такой счет уже существует");
+                return View(account);
+            }
 
             await _context.Database.ExecuteSqlInterpolatedAsync(
                 $"UPDATE dbo.Accounts SET AccountNumber = {account.AccountNumber} WHERE Id = {id} AND UserId = {userId}");
